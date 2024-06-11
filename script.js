@@ -77,3 +77,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+        // Function to open the anchor link after a 5-second delay
+        function openAnchorLink() {
+            setTimeout(function () {
+                window.open('https://www.example.com', '_blank');
+            }, 5000); // 5000 milliseconds = 5 seconds
+        }
