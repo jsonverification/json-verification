@@ -1,80 +1,146 @@
 document.addEventListener('DOMContentLoaded', function() {
-    var validateBtn = document.getElementById('validate-btn');
-    var jsonInput = document.getElementById('json-input');
+    // Initialize Ace editor
+    var editor = ace.edit("json-input");
+    editor.setTheme("ace/theme/twilight");
+    editor.session.setMode("ace/mode/json");
+    editor.setShowPrintMargin(false);
+
     var messageParagraph = document.getElementById('message');
 
-    validateBtn.addEventListener('click', function() {
+    function validateAndFormatJSON() {
         try {
-            // Try to parse JSON
-            var json = JSON.parse(jsonInput.value);
+            var json = JSON.parse(editor.getValue());
             messageParagraph.textContent = "Valid JSON";
             messageParagraph.style.color = "green";
-            
-            // Format the JSON and set it to the textarea
-            jsonInput.value = JSON.stringify(json, null, 4);
+            editor.session.setValue(JSON.stringify(json, null, 4));
+            editor.session.clearAnnotations();
         } catch (e) {
-            // If error, show message
             messageParagraph.textContent = "Invalid JSON: " + e.message;
             messageParagraph.style.color = "red";
+            editor.session.setAnnotations([{
+                row: e.at - 1,
+                column: 0,
+                text: e.message,
+                type: "error"
+            }]);
+        }
+    }
+
+    document.getElementById('validate-btn').addEventListener('click', validateAndFormatJSON);
+
+    document.getElementById('load-btn').addEventListener('click', function() {
+        var url = prompt("Enter the URL of the JSON file:");
+        
+        if (url) {
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(json => {
+                    editor.session.setValue(JSON.stringify(json, null, 4));
+                    validateAndFormatJSON();
+                })
+                .catch((error) => {
+                    messageParagraph.textContent = "Error: " + error.message;
+                    messageParagraph.style.color = "red";
+                    editor.session.setAnnotations([{
+                        row: 0,
+                        column: 0,
+                        text: error.message,
+                        type: "error"
+                    }]);
+                });
         }
     });
-});
 
-	document.addEventListener('DOMContentLoaded', function () {
-    var jsonInput = document.getElementById('json-input');
-    var messageParagraph = document.getElementById('message');
-    var validateBtn = document.getElementById('validate-btn');
-    var clearBtn = document.getElementById('clear-btn');
-    var downloadBtn = document.getElementById('download-btn');
-
-    var updateLineAndCharCount = function () {
-        var lineCount = jsonInput.value.split("\n").length;
-        var charCount = jsonInput.value.length;
-        // If there's a need to display character count, you can include charCount in your message too
-        messageParagraph.textContent = "Lines: " + lineCount;
-    };
-    
-    // Whenever the content of the textarea changes
-    jsonInput.addEventListener('input', updateLineAndCharCount);
-
-    // Validate JSON
-    validateBtn.addEventListener('click', function () {
-        var json;
-        try {
-            json = JSON.parse(jsonInput.value);
-            // Reformatting JSON
-            jsonInput.value = JSON.stringify(json, null, 4);
-            updateLineAndCharCount(); // Update line count after reformatting
-            messageParagraph.style.color = "green";
-            messageParagraph.textContent = "Valid JSON";
-        } catch (e) {
-            messageParagraph.style.color = "red";
-            messageParagraph.textContent = "Invalid JSON: " + e.message;
-        }
-    });
-
-    // Clear JSON
-    clearBtn.addEventListener('click', function () {
-        jsonInput.value = '';
-        messageParagraph.textContent = '';
-    });
-
-    // Download JSON
-    downloadBtn.addEventListener('click', function () {
-        var json = jsonInput.value;
-        if (json) {
-            var blob = new Blob([json], { type: 'application/json' });
+    document.getElementById('download-btn').addEventListener('click', function() {
+        var jsonContent = editor.getValue();
+        if (jsonContent) {
+            var blob = new Blob([jsonContent], { type: "application/json" });
             var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = 'data.json';
-            document.body.appendChild(a); // we need to append it to the body for Firefox
-            a.click();
-            document.body.removeChild(a); // then remove it from the body
+
+            var downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = "edited_json.json";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
             URL.revokeObjectURL(url);
-       
         }
     });
 });
 
-     
+ document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Ace editor
+    var editor = ace.edit("json-input");
+    // ... the rest of your editor initialization code ...
+
+    var messageParagraph = document.getElementById('message');
+
+    // ... other event listeners (validate, load, download)
+
+    var clearBtn = document.getElementById('clear-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            console.log('Clear button clicked'); // Debugging line
+            // Clear the editor content
+            editor.session.setValue('');
+            // Reset any displayed messages or annotations
+            messageParagraph.textContent = "";
+            messageParagraph.style.color = ""; // Resetting to default color
+            editor.session.clearAnnotations();
+        });
+    } else {
+        console.error('Clear button element not found'); // Debugging line
+    }
+
+    // ... the rest of the code ...
+});
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Assuming you've initialized Ace Editor as "editor"
+    var editor = ace.edit("json-input"); // replace "json-input" with your editor's container ID
+    editor.setTheme("ace/theme/monokai"); // or any other theme
+    editor.getSession().setMode("ace/mode/json");
+
+    var messageParagraph = document.getElementById('message');
+    var toggleFormatBtn = document.getElementById('toggle-format-btn');
+    var isMinified = false; // Track whether the JSON is minified
+
+    toggleFormatBtn.addEventListener('click', function () {
+        var content = editor.getValue();
+        var result;
+        
+        try {
+            var json = JSON.parse(content);
+
+            // Toggle between minify and prettify
+            if (isMinified) {
+                result = JSON.stringify(json, null, 4);
+                toggleFormatBtn.textContent = 'Minify JSON';
+            } else {
+                result = JSON.stringify(json);
+                toggleFormatBtn.textContent = 'Prettify JSON';
+            }
+
+            isMinified = !isMinified;
+            editor.setValue(result, -1); // -1 moves the cursor to the start
+
+            messageParagraph.style.color = "green";
+            messageParagraph.textContent = 'JSON formatted successfully.';
+
+        } catch (e) {
+            messageParagraph.style.color = "red";
+            messageParagraph.textContent = 'Invalid JSON: ' + e.message;
+        }
+    });
+
+    // ... rest of your Ace Editor related code ...
+});
